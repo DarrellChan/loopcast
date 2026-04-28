@@ -805,7 +805,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
   const getAiCoachTips = async () => {
     // Force the user to add tags so the AI prompt has proper context
     if (!clip.tags || clip.tags.length === 0) {
-      setAiCoachTips("To give you the best personalized feedback, I need to know what you're working on!\n\nPlease add some Drill Tags (like 'Dinking' or 'Third Shot Drop') to this clip so I can analyze your form correctly.");
+      setAiCoachTips("To give you the best personalized feedback, I need to know what you're working on!\n\nPlease add some Drill Tags (like 'Dinking' or 'Third Shot Drop') to this clip. Once tags are added, click the AI Coach button again so I can analyze your form correctly.");
       return;
     }
 
@@ -1056,7 +1056,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
               
               {/* Overlay Group */}
               <div className="flex gap-1.5 border-r border-gray-700 pr-3">
-                 <button onClick={() => setShowVideo(!showVideo)} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${!showVideo ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                 <button onClick={() => setShowVideo(!showVideo)} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${showVideo ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
                    {showVideo ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{showVideo ? 'Vid ON' : 'Vid OFF'}</span>
                  </button>
