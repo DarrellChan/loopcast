@@ -436,6 +436,7 @@ function CameraView({ onRecordingComplete, onCancel }) {
   
   const [cameras, setCameras] = useState([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [isFrontCamera, setIsFrontCamera] = useState(false);
   const chunksRef = useRef([]);
 
   const startCamera = async (deviceId = null) => {
@@ -474,6 +475,12 @@ function CameraView({ onRecordingComplete, onCancel }) {
         const activeDevice = videoInputs.find(d => d.label === activeTrack.label);
         setSelectedCameraId(activeDevice ? activeDevice.deviceId : videoInputs[0].deviceId);
       }
+
+      // Detect if the active camera is a front-facing (selfie) camera
+      const activeTrack = stream.getVideoTracks()[0];
+      const settings = activeTrack.getSettings ? activeTrack.getSettings() : {};
+      const isFront = settings.facingMode === 'user' || activeTrack.label.toLowerCase().includes('front');
+      setIsFrontCamera(isFront);
 
     } catch (err) {
       console.error("Error accessing camera:", err);
@@ -548,7 +555,7 @@ function CameraView({ onRecordingComplete, onCancel }) {
           <button onClick={() => startCamera()} className="ml-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 text-white">Retry</button>
         </div>
       ) : (
-        <video ref={videoRef} autoPlay muted playsInline className="absolute top-0 left-0 w-full h-full object-cover z-0" />
+        <video ref={videoRef} autoPlay muted playsInline className={`absolute top-0 left-0 w-full h-full object-cover z-0 ${isFrontCamera ? '-scale-x-100' : ''}`} />
       )}
 
       <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex justify-center items-center z-10">
@@ -796,9 +803,16 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
   }, [isPoseEnabled, isBallEnabled, isPlaying]);
 
   const getAiCoachTips = async () => {
+    // Force the user to add tags so the AI prompt has proper context
+    if (!clip.tags || clip.tags.length === 0) {
+      setAiCoachTips("To give you the best personalized feedback, I need to know what you're working on!\n\nPlease add some Drill Tags (like 'Dinking' or 'Third Shot Drop') to this clip so I can analyze your form correctly.");
+      return;
+    }
+
     setIsAiLoading(true);
+    setAiCoachTips(null);
     try {
-      const tags = clip.tags?.length > 0 ? clip.tags.join(', ') : 'general pickleball play';
+      const tags = clip.tags.join(', ');
       const name = clip.userName || 'the player';
       const prompt = `As an expert pickleball coach, I am reviewing a video of ${name} practicing: ${tags}. Provide 3 quick, bulleted coaching points on what specific body mechanics, positioning, or strategies to look for when reviewing this footage to help them improve. Be extremely concise.`;
       const response = await callGemini(prompt);
@@ -1037,28 +1051,37 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
 
           {/* Bottom row of controls (AI & Actions) */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 sm:pt-0 border-t border-gray-800 sm:border-none">
-            <div className="flex gap-1.5">
-               <button onClick={togglePoseDetection} disabled={isPoseModelLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${isPoseEnabled ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
-                 {isPoseModelLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
-                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">{isPoseEnabled ? 'Pose On' : 'Pose'}</span>
-               </button>
+            {/* LEFT SIDE: Visual Overlays & AI Coach grouped separately */}
+            <div className="flex flex-wrap items-center gap-3">
+              
+              {/* Overlay Group */}
+              <div className="flex gap-1.5 border-r border-gray-700 pr-3">
+                 <button onClick={() => setShowVideo(!showVideo)} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${!showVideo ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                   {showVideo ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                   <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{showVideo ? 'Vid ON' : 'Vid OFF'}</span>
+                 </button>
 
-               <button onClick={toggleBallDetection} disabled={isBallModelLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${isBallEnabled ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
-                 {isBallModelLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
-                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{isBallEnabled ? 'Ball On' : 'Ball (Beta)'}</span>
-               </button>
+                 <button onClick={togglePoseDetection} disabled={isPoseModelLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${isPoseEnabled ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                   {isPoseModelLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                   <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">{isPoseEnabled ? 'Pose On' : 'Pose'}</span>
+                 </button>
 
-               <button onClick={getAiCoachTips} disabled={isAiLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20`}>
-                 {isAiLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
-                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">AI Coach</span>
-               </button>
-               
-               <button onClick={() => setShowVideo(!showVideo)} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${!showVideo ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
-                 {showVideo ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
-                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{showVideo ? 'Vid ON' : 'Vid OFF'}</span>
-               </button>
+                 <button onClick={toggleBallDetection} disabled={isBallModelLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${isBallEnabled ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                   {isBallModelLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                   <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{isBallEnabled ? 'Ball On' : 'Ball (Beta)'}</span>
+                 </button>
+              </div>
+
+              {/* AI Coach Button - Isolated */}
+              <div className="flex">
+                <button onClick={getAiCoachTips} disabled={isAiLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20`}>
+                  {isAiLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">AI Coach</span>
+                </button>
+              </div>
             </div>
 
+            {/* RIGHT SIDE: App Actions */}
             <div className="flex items-center gap-1 sm:gap-1.5">
                <button onClick={openEditModal} className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white rounded-lg transition-colors border border-gray-700">
                  <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1072,6 +1095,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
         </div>
       </div>
 
+      {/* AI Coach Popup Modal */}
       {aiCoachTips && (
         <div className="absolute top-16 sm:top-20 right-4 left-4 sm:left-auto sm:right-6 sm:w-80 max-h-[70%] sm:max-h-[80%] overflow-y-auto bg-gray-900/95 border border-purple-500/30 shadow-2xl rounded-2xl p-4 sm:p-5 z-40 backdrop-blur-md">
           <div className="flex justify-between items-start mb-3">
@@ -1079,9 +1103,23 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
             <button onClick={() => setAiCoachTips(null)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
           </div>
           <div className="text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{aiCoachTips}</div>
+          
+          {/* Only show "Add Tags" button if the prompt fired because there were no tags */}
+          {(!clip.tags || clip.tags.length === 0) && (
+            <button 
+              onClick={() => {
+                setAiCoachTips(null);
+                openEditModal();
+              }}
+              className="mt-4 w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-2 rounded-xl transition-all shadow-md text-sm"
+            >
+              Add Drill Tags
+            </button>
+          )}
         </div>
       )}
 
+      {/* Edit Details Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
