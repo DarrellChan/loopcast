@@ -3,7 +3,7 @@ import {
   Video, Square, Play, Pause, RotateCcw, 
   MapPin, X, Settings2, Trash2, Camera, 
   Grid, Plus, ChevronLeft, Clock, Calendar,
-  Tag, User, Edit3, Sparkles, Brain, Filter, Share2, Activity, Loader2, Target, Download
+  Tag, User, Edit3, Sparkles, Brain, Filter, Share2, Activity, Loader2, Target, Download, Eye, EyeOff
 } from 'lucide-react';
 
 // --- INDEXED DB STORAGE UTILS ---
@@ -596,6 +596,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isSharing, setIsSharing] = useState(false);
+  const [showVideo, setShowVideo] = useState(true);
 
   // AI State
   const [aiCoachTips, setAiCoachTips] = useState(null);
@@ -887,6 +888,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
       window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('touchend', handleUp);
     };
   }, [draggingMarker, duration, loopStart, loopEnd]);
@@ -967,7 +969,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
           </div>
         </div>
 
-        <video ref={videoRef} src={clip.url} className="absolute top-0 left-0 w-full h-full object-contain z-0" onClick={togglePlay} crossOrigin="anonymous" playsInline />
+        <video ref={videoRef} src={clip.url} className={`absolute top-0 left-0 w-full h-full object-contain z-0 transition-opacity duration-300 ${showVideo ? 'opacity-100' : 'opacity-0'}`} onClick={togglePlay} crossOrigin="anonymous" playsInline />
         <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-10 pointer-events-none" />
         
         {!isPlaying && (
@@ -1049,6 +1051,11 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
                <button onClick={getAiCoachTips} disabled={isAiLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20`}>
                  {isAiLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">AI Coach</span>
+               </button>
+               
+               <button onClick={() => setShowVideo(!showVideo)} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${!showVideo ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                 {showVideo ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{showVideo ? 'Vid ON' : 'Vid OFF'}</span>
                </button>
             </div>
 
