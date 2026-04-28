@@ -3,7 +3,7 @@ import {
   Video, Square, Play, Pause, RotateCcw, 
   MapPin, X, Settings2, Trash2, Camera, 
   Grid, Plus, ChevronLeft, Clock, Calendar,
-  Tag, User, Edit3, Sparkles, Brain, Filter, Share2, Activity, Loader2, Target
+  Tag, User, Edit3, Sparkles, Brain, Filter, Share2, Activity, Loader2, Target, Download
 } from 'lucide-react';
 
 // --- INDEXED DB STORAGE UTILS ---
@@ -900,6 +900,15 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
     }
   };
 
+  const downloadClip = () => {
+    const a = document.createElement('a');
+    a.href = clip.url;
+    a.download = `LoopCast_${clip.userName?.replace(/\s+/g, '_') || 'Player'}_${clip.id}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   return (
     <div className="flex flex-col w-full h-[100dvh] sm:h-full bg-gray-900 text-gray-200">
       {/* Video section dynamically resizes on mobile to leave room for controls */}
@@ -1003,8 +1012,9 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
                  <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                  <span className="hidden sm:inline">Edit Details</span>
                </button>
-               <button onClick={shareClip} disabled={isSharing} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"><Share2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
-               <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+               <button onClick={downloadClip} className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-400/10 rounded-lg transition-colors" title="Download"><Download className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+               <button onClick={shareClip} disabled={isSharing} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors" title="Share"><Share2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+               <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete"><Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
             </div>
           </div>
         </div>
