@@ -53,7 +53,7 @@ const deleteClipFromDB = async (id) => {
 
 // --- GEMINI API HELPER ---
 const callGemini = async (prompt) => {
-  const apiKey = "";
+  const apiKey = "AIzaSyC85BUcmUvQN6JL9eVV6bfQ1gYrX8e5C5k";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
