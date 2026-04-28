@@ -92,17 +92,14 @@ export default function App() {
   const [activeClip, setActiveClip] = useState(null);
   const [isLoadingDB, setIsLoadingDB] = useState(true);
 
-  // Load clips from local IndexedDB on startup
   useEffect(() => {
     const fetchClips = async () => {
       try {
         const storedClips = await loadClipsFromDB();
-        // Convert stored Blobs back into usable URLs for the session
         const clipsWithUrls = storedClips.map(clip => ({
           ...clip,
           url: URL.createObjectURL(clip.blob) 
         }));
-        // Sort by newest first
         setClips(clipsWithUrls.sort((a, b) => b.id - a.id));
       } catch (err) {
         console.error("Failed to load clips from DB:", err);
@@ -116,16 +113,14 @@ export default function App() {
   const handleRecordingComplete = async (blob) => {
     const newClip = {
       id: Date.now(),
-      blob: blob, // Store the raw binary blob
+      blob: blob, 
       date: new Date(),
       tags: [],
       userName: '',
     };
     
-    // Save to database
     await saveClipToDB(newClip);
 
-    // Create session URL and add to UI
     const clipWithUrl = { ...newClip, url: URL.createObjectURL(blob) };
     setClips(prev => [clipWithUrl, ...prev]);
     setActiveClip(clipWithUrl);
@@ -140,7 +135,6 @@ export default function App() {
       setActiveClip(prev => ({ ...prev, ...updatedFields }));
     }
 
-    // Update in database (needs the blob, so we strip the temporary url)
     const clipToSave = updatedClips.find(c => c.id === id);
     if (clipToSave) {
       const { url, ...dbClip } = clipToSave; 
@@ -151,7 +145,7 @@ export default function App() {
   const deleteClip = async (id) => {
     const clipToDelete = clips.find(c => c.id === id);
     if (clipToDelete?.url) {
-      URL.revokeObjectURL(clipToDelete.url); // Free up browser memory
+      URL.revokeObjectURL(clipToDelete.url);
     }
     
     await deleteClipFromDB(id);
@@ -170,9 +164,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col font-sans">
       <header className="bg-gray-900 border-b border-gray-800 p-4 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Video className="text-blue-500 w-6 h-6" />
-          <h1 className="text-xl font-semibold tracking-tight">LoopCast Pro</h1>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Video className="text-blue-500 w-5 h-5 sm:w-6 sm:h-6" />
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">LoopCast Pro</h1>
         </div>
         
         {appMode !== 'gallery' && (
@@ -181,13 +175,13 @@ export default function App() {
             className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors"
           >
             <Grid className="w-4 h-4" />
-            Gallery
+            <span className="hidden sm:inline">Gallery</span>
           </button>
         )}
       </header>
 
-      <main className="flex-grow flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-5xl bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-800 flex flex-col min-h-[600px]">
+      <main className="flex-grow flex items-center justify-center p-0 sm:p-4 md:p-8">
+        <div className="w-full h-full sm:h-auto sm:max-w-5xl bg-gray-900 sm:rounded-2xl shadow-2xl overflow-hidden sm:border border-gray-800 flex flex-col min-h-[100dvh] sm:min-h-[600px]">
           
           {appMode === 'gallery' && (
             <GalleryView 
@@ -265,31 +259,31 @@ function GalleryView({ clips, onRecordNew, onPlayClip, onDeleteClip }) {
   };
 
   return (
-    <div className="flex flex-col h-full p-6">
-      <div className="flex items-center justify-between mb-8">
+    <div className="flex flex-col h-full p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1">Your Clips</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Your Clips</h2>
           <p className="text-gray-400 text-sm">
             Saved permanently on this device ({filteredClips.length}{clips.length !== filteredClips.length ? ` of ${clips.length}` : ''})
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 w-full sm:w-auto">
           {filteredClips.length > 0 && (
             <button 
               onClick={generateInsights}
               disabled={isAiLoading}
-              className="flex items-center gap-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 px-4 py-2.5 rounded-xl font-medium transition-all"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
             >
-              <Sparkles className="w-5 h-5" />
-              {isAiLoading ? 'Analyzing...' : '✨ AI Insights'}
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="truncate">{isAiLoading ? 'Analyzing...' : 'AI Insights'}</span>
             </button>
           )}
           <button 
             onClick={onRecordNew}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20"
           >
-            <Plus className="w-5 h-5" />
-            New Recording
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="truncate">New Recording</span>
           </button>
         </div>
       </div>
@@ -301,10 +295,10 @@ function GalleryView({ clips, onRecordNew, onPlayClip, onDeleteClip }) {
       )}
 
       {aiInsight && (
-        <div className="mb-6 p-5 bg-purple-900/20 border border-purple-500/30 rounded-xl relative">
-          <button onClick={() => setAiInsight(null)} className="absolute top-4 right-4 text-purple-400 hover:text-white"><X className="w-4 h-4" /></button>
-          <h3 className="text-purple-300 font-bold mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4"/> AI Training Summary</h3>
-          <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{aiInsight}</p>
+        <div className="mb-6 p-4 sm:p-5 bg-purple-900/20 border border-purple-500/30 rounded-xl relative">
+          <button onClick={() => setAiInsight(null)} className="absolute top-2 right-2 sm:top-4 sm:right-4 text-purple-400 hover:text-white p-2"><X className="w-4 h-4" /></button>
+          <h3 className="text-purple-300 font-bold mb-2 flex items-center gap-2 text-sm sm:text-base"><Sparkles className="w-4 h-4"/> AI Training Summary</h3>
+          <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed pr-6">{aiInsight}</p>
         </div>
       )}
 
@@ -313,14 +307,14 @@ function GalleryView({ clips, onRecordNew, onPlayClip, onDeleteClip }) {
           <div className="flex items-center gap-2 text-gray-400 text-sm font-medium">
             <Filter className="w-4 h-4" /> Filter Clips
           </div>
-          <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
             {uniquePlayers.length > 0 && (
-              <div className="flex flex-col gap-2 min-w-[200px]">
+              <div className="flex flex-col gap-2 md:min-w-[200px]">
                 <label className="text-xs text-gray-500 uppercase font-bold tracking-wider">Player</label>
                 <select
                   value={filterPlayer}
                   onChange={(e) => setFilterPlayer(e.target.value)}
-                  className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors w-full"
                 >
                   <option value="All">All Players</option>
                   {uniquePlayers.map(p => <option key={p} value={p}>{p}</option>)}
@@ -356,18 +350,18 @@ function GalleryView({ clips, onRecordNew, onPlayClip, onDeleteClip }) {
       )}
 
       {clips.length === 0 ? (
-        <div className="flex-grow flex flex-col items-center justify-center text-gray-500 gap-4">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center">
-            <Video className="w-10 h-10 text-gray-600" />
+        <div className="flex-grow flex flex-col items-center justify-center text-gray-500 gap-4 py-12">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-800 rounded-full flex items-center justify-center">
+            <Video className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
           </div>
-          <p className="text-lg">No clips recorded yet.</p>
+          <p className="text-base sm:text-lg text-center">No clips recorded yet.</p>
         </div>
       ) : filteredClips.length === 0 ? (
-        <div className="flex-grow flex flex-col items-center justify-center text-gray-500 gap-4">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center">
-            <Filter className="w-10 h-10 text-gray-600" />
+        <div className="flex-grow flex flex-col items-center justify-center text-gray-500 gap-4 py-12">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-800 rounded-full flex items-center justify-center">
+            <Filter className="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" />
           </div>
-          <p className="text-lg">No clips match your selected filters.</p>
+          <p className="text-base sm:text-lg text-center">No clips match your selected filters.</p>
           <button 
             onClick={() => { setFilterPlayer('All'); setFilterTags([]); }} 
             className="text-blue-400 hover:text-blue-300 font-medium"
@@ -376,7 +370,7 @@ function GalleryView({ clips, onRecordNew, onPlayClip, onDeleteClip }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto pr-2 pb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 overflow-y-auto pb-4">
           {filteredClips.map(clip => (
             <div key={clip.id} className="group bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-blue-500/50 transition-colors flex flex-col">
               <div className="relative aspect-video bg-black cursor-pointer overflow-hidden"
@@ -388,35 +382,35 @@ function GalleryView({ clips, onRecordNew, onPlayClip, onDeleteClip }) {
                   preload="metadata"
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                  <Play className="w-12 h-12 fill-white text-white drop-shadow-md" />
+                  <Play className="w-10 h-10 sm:w-12 sm:h-12 fill-white text-white drop-shadow-md" />
                 </div>
               </div>
-              <div className="p-4 flex justify-between items-start bg-gray-800">
+              <div className="p-3 sm:p-4 flex justify-between items-start bg-gray-800">
                 <div className="flex flex-col gap-1.5 w-full pr-2">
-                  <div className="flex items-center gap-2 text-white font-medium">
-                    <User className="w-4 h-4 text-blue-400" />
+                  <div className="flex items-center gap-2 text-white font-medium text-sm sm:text-base">
+                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 shrink-0" />
                     <span className="truncate">{clip.userName || 'Unknown Player'}</span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(clip.date).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{new Date(clip.date).toLocaleTimeString()}</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500">
+                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(clip.date).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(clip.date).toLocaleTimeString()}</span>
                   </div>
                   {clip.tags && clip.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-1">
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {clip.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="text-[10px] font-medium bg-blue-500/10 text-blue-300 px-2 py-0.5 rounded border border-blue-500/20">
+                        <span key={tag} className="text-[9px] sm:text-[10px] font-medium bg-blue-500/10 text-blue-300 px-1.5 sm:px-2 py-0.5 rounded border border-blue-500/20">
                           {tag}
                         </span>
                       ))}
                       {clip.tags.length > 3 && (
-                        <span className="text-[10px] font-medium text-gray-400 px-1 py-0.5">+{clip.tags.length - 3}</span>
+                        <span className="text-[9px] sm:text-[10px] font-medium text-gray-400 px-1 py-0.5">+{clip.tags.length - 3}</span>
                       )}
                     </div>
                   )}
                 </div>
                 <button 
                   onClick={(e) => { e.stopPropagation(); onDeleteClip(clip.id); }}
-                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors shrink-0"
+                  className="p-1.5 sm:p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors shrink-0"
                   title="Delete Clip"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -443,7 +437,7 @@ function CameraView({ onRecordingComplete, onCancel }) {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } }, 
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, 
         audio: true 
       });
       streamRef.current = stream;
@@ -454,7 +448,7 @@ function CameraView({ onRecordingComplete, onCancel }) {
       setError(null);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      setError("Could not access camera and microphone. Please check permissions.");
+      setError("Could not access camera. Please check permissions.");
     }
   };
 
@@ -471,24 +465,14 @@ function CameraView({ onRecordingComplete, onCancel }) {
 
   const handleStartRecording = () => {
     if (!streamRef.current) return;
-    
     chunksRef.current = [];
-    const mediaRecorder = new MediaRecorder(streamRef.current, {
-      mimeType: 'video/webm; codecs=vp8,opus'
-    });
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        chunksRef.current.push(e.data);
-      }
-    };
-
+    const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm; codecs=vp8,opus' });
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: 'video/webm' });
       stopCamera();
-      onRecordingComplete(blob); // Pass the BLOB directly for IndexedDB
+      onRecordingComplete(blob); 
     };
-
     mediaRecorderRef.current = mediaRecorder;
     mediaRecorder.start();
     setIsRecording(true);
@@ -502,13 +486,13 @@ function CameraView({ onRecordingComplete, onCancel }) {
   };
 
   return (
-    <div className="flex flex-col relative w-full h-full min-h-[600px] bg-black overflow-hidden">
+    <div className="flex flex-col relative w-full h-[100dvh] sm:h-full sm:min-h-[600px] bg-black overflow-hidden">
       <div className="absolute top-0 inset-x-0 p-4 flex justify-between z-10 bg-gradient-to-b from-black/60 to-transparent">
         <button 
           onClick={() => { stopCamera(); onCancel(); }}
-          className="flex items-center gap-2 text-white/80 hover:text-white bg-black/40 hover:bg-black/60 px-3 py-2 rounded-lg backdrop-blur-sm transition-all"
+          className="flex items-center gap-2 text-white/80 hover:text-white bg-black/40 hover:bg-black/60 px-3 py-2 rounded-lg backdrop-blur-sm transition-all text-sm sm:text-base"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           Cancel
         </button>
       </div>
@@ -522,28 +506,29 @@ function CameraView({ onRecordingComplete, onCancel }) {
         <video ref={videoRef} autoPlay muted playsInline className="absolute top-0 left-0 w-full h-full object-cover z-0" />
       )}
 
-      <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex justify-center items-center z-10">
+      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex justify-center items-center z-10">
         {hasPermission && (
-          <div className="flex items-center gap-6 bg-gray-900/90 p-3 rounded-full backdrop-blur-md border border-gray-700/50 shadow-2xl">
+          <div className="flex items-center gap-4 sm:gap-6 bg-gray-900/90 p-2 sm:p-3 rounded-full backdrop-blur-md border border-gray-700/50 shadow-2xl">
             {!isRecording ? (
               <button 
                 onClick={handleStartRecording}
-                className="group flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-8 py-3 rounded-full font-medium transition-all"
+                className="group flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-medium transition-all text-sm sm:text-base"
               >
-                <div className="w-4 h-4 bg-white rounded-full group-hover:scale-110 transition-transform" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full group-hover:scale-110 transition-transform" />
                 Start Recording
               </button>
             ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-red-500 font-medium px-4 animate-pulse">
-                  <div className="w-3 h-3 bg-red-500 rounded-full" />
-                  Recording...
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-red-500 font-medium px-2 sm:px-4 animate-pulse text-sm sm:text-base">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-red-500 rounded-full" />
+                  <span className="hidden sm:inline">Recording...</span>
+                  <span className="sm:hidden">REC</span>
                 </div>
                 <button 
                   onClick={handleStopRecording}
-                  className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-8 py-3 rounded-full font-medium transition-all shadow-lg"
+                  className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-full font-medium transition-all shadow-lg text-sm sm:text-base"
                 >
-                  <Square className="w-5 h-5 fill-white" />
+                  <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
                   Stop & Save
                 </button>
               </div>
@@ -574,16 +559,14 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState([]);
   
-  // Computer Vision Pose Detection State
   const [isPoseEnabled, setIsPoseEnabled] = useState(false);
   const [isPoseModelLoading, setIsPoseModelLoading] = useState(false);
   const poseDetectorRef = useRef(null);
 
-  // Computer Vision Ball Tracking State
   const [isBallEnabled, setIsBallEnabled] = useState(false);
   const [isBallModelLoading, setIsBallModelLoading] = useState(false);
   const ballDetectorRef = useRef(null);
-  const ballTrailRef = useRef([]); // Stores historical coordinates for the trajectory
+  const ballTrailRef = useRef([]); 
   
   const AVAILABLE_TAGS = ['Dinking', 'Crosscourt', 'Volley', 'Resets', 'Serve', 'Return', 'Third Shot Drop', 'Overhead', 'Lob'];
 
@@ -673,7 +656,6 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
     }
   };
 
-  // Unified Rendering Loop for Pose and Ball tracking
   useEffect(() => {
     let animationId;
     let lastRenderTime = 0;
@@ -697,7 +679,6 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
 
         const mapPt = (x, y) => ({ x: x * scale + xOffset, y: y * scale + yOffset });
 
-        // If video scrubbed, clear old trail
         if (Math.abs(video.currentTime - lastRenderTime) > 0.5) {
           ballTrailRef.current = [];
         }
@@ -714,7 +695,6 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
           const [poses, objects] = await Promise.all(promises);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // 1. Draw Pose
           if (poses && poses.length > 0) {
             const keypoints = poses[0].keypoints;
             const edges = window.poseDetection.util.getAdjacentPairs(window.poseDetection.SupportedModels.MoveNet);
@@ -725,10 +705,7 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
               if (keypoints[i].score > 0.3 && keypoints[j].score > 0.3) {
                 const p1 = mapPt(keypoints[i].x, keypoints[i].y);
                 const p2 = mapPt(keypoints[j].x, keypoints[j].y);
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
               }
             });
 
@@ -736,14 +713,11 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
             keypoints.forEach(kp => {
               if (kp.score > 0.3) {
                 const p = mapPt(kp.x, kp.y);
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI); ctx.fill();
               }
             });
           }
 
-          // 2. Draw Ball Trail
           if (objects) {
             const ball = objects.find(obj => obj.class === 'sports ball');
             if (ball) {
@@ -752,41 +726,27 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
               ballTrailRef.current.push({ x: centerX, y: centerY, time: video.currentTime });
             }
 
-            // Remove trail points older than 1.5 seconds of video time
             ballTrailRef.current = ballTrailRef.current.filter(pt => pt.time > video.currentTime - 1.5 && pt.time <= video.currentTime);
 
-            // Draw glowing trajectory
             if (ballTrailRef.current.length > 1) {
               ctx.beginPath();
-              ctx.strokeStyle = '#ff8800'; // Bright Orange
-              ctx.lineWidth = 4;
-              ctx.lineCap = 'round';
-              ctx.lineJoin = 'round';
-              ctx.shadowColor = '#ff4400';
-              ctx.shadowBlur = 10;
-
+              ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+              ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 10;
               for (let i = 0; i < ballTrailRef.current.length; i++) {
                 const pt = mapPt(ballTrailRef.current[i].x, ballTrailRef.current[i].y);
-                if (i === 0) ctx.moveTo(pt.x, pt.y);
-                else ctx.lineTo(pt.x, pt.y);
+                if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
               }
-              ctx.stroke();
-              ctx.shadowBlur = 0; // Reset shadow
+              ctx.stroke(); ctx.shadowBlur = 0;
             }
           }
 
-        } catch(err) {
-           // Skip frame on AI error
-        }
+        } catch(err) { }
       }
       animationId = requestAnimationFrame(renderAiOverlays);
     };
 
     if (isPoseEnabled || isBallEnabled) renderAiOverlays();
-
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-    };
+    return () => { if (animationId) cancelAnimationFrame(animationId); };
   }, [isPoseEnabled, isBallEnabled, isPlaying]);
 
   const getAiCoachTips = async () => {
@@ -841,11 +801,15 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying, loopStart, loopEnd]);
 
+  // TOUCH AND MOUSE EVENT HANDLING FOR MOBILE/DESKTOP SLIDER
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMove = (e) => {
       if (!draggingMarker || !progressContainerRef.current || !duration) return;
+      
+      // Support both Mouse and Touch events
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const rect = progressContainerRef.current.getBoundingClientRect();
-      let pos = (e.clientX - rect.left) / rect.width;
+      let pos = (clientX - rect.left) / rect.width;
       pos = Math.max(0, Math.min(1, pos)); 
       const newTime = pos * duration;
 
@@ -859,18 +823,26 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
         if (videoRef.current) videoRef.current.currentTime = newTime;
       }
     };
-    const handleMouseUp = () => setDraggingMarker(null);
+    
+    const handleUp = () => setDraggingMarker(null);
+    
     if (draggingMarker) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+      window.addEventListener('touchmove', handleMove, { passive: false });
+      window.addEventListener('touchend', handleUp);
+      
       if (videoRef.current && !videoRef.current.paused) {
           videoRef.current.pause();
           setIsPlaying(false);
       }
     }
+    
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
     };
   }, [draggingMarker, duration, loopStart, loopEnd]);
 
@@ -888,8 +860,9 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
 
   const handleSeek = (e) => {
     if (draggingMarker || !progressContainerRef.current || !videoRef.current) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const rect = progressContainerRef.current.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+    const pos = (clientX - rect.left) / rect.width;
     videoRef.current.currentTime = pos * duration;
   };
 
@@ -928,116 +901,122 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full bg-gray-900 text-gray-200">
-      <div className="relative w-full aspect-video bg-black overflow-hidden group">
-        <div className="absolute top-0 inset-x-0 p-4 flex justify-between z-30 bg-gradient-to-b from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={onBack} className="flex items-center gap-2 text-white hover:text-blue-400 bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-sm transition-all"><ChevronLeft className="w-5 h-5" /> Back</button>
+    <div className="flex flex-col w-full h-[100dvh] sm:h-full bg-gray-900 text-gray-200">
+      {/* Video section dynamically resizes on mobile to leave room for controls */}
+      <div className="relative w-full flex-grow sm:aspect-video bg-black overflow-hidden group">
+        <div className="absolute top-0 inset-x-0 p-3 sm:p-4 flex justify-between z-30 bg-gradient-to-b from-black/80 to-transparent">
+          <button onClick={onBack} className="flex items-center gap-1 sm:gap-2 text-white hover:text-blue-400 bg-black/40 px-2 sm:px-3 py-1.5 rounded-lg backdrop-blur-sm transition-all text-sm"><ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" /> Back</button>
           <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-2 text-sm text-gray-300 bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-sm">
-               <User className="w-4 h-4" /> <span className="font-medium text-white">{clip.userName || 'Unknown Player'}</span>
+            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-300 bg-black/40 px-2 sm:px-3 py-1.5 rounded-lg backdrop-blur-sm">
+               <User className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="font-medium text-white truncate max-w-[100px] sm:max-w-none">{clip.userName || 'Unknown Player'}</span>
             </div>
           </div>
         </div>
 
-        <video ref={videoRef} src={clip.url} className="absolute top-0 left-0 w-full h-full object-contain z-0" onClick={togglePlay} crossOrigin="anonymous" />
+        <video ref={videoRef} src={clip.url} className="absolute top-0 left-0 w-full h-full object-contain z-0" onClick={togglePlay} crossOrigin="anonymous" playsInline />
         <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-10 pointer-events-none" />
         
         {!isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-             <div className="bg-blue-600/80 p-5 rounded-full text-white backdrop-blur-sm shadow-xl shadow-blue-900/20"><Play className="w-10 h-10 fill-white translate-x-1" /></div>
+             <div className="bg-blue-600/80 p-4 sm:p-5 rounded-full text-white backdrop-blur-sm shadow-xl shadow-blue-900/20"><Play className="w-8 h-8 sm:w-10 sm:h-10 fill-white translate-x-1" /></div>
           </div>
         )}
       </div>
 
-      <div className="p-4 md:p-6 flex flex-col gap-6 bg-gray-900">
-        <div className="space-y-3 select-none">
-          <div className="flex justify-between text-xs text-gray-400 font-mono tracking-wider">
+      {/* Control Panel: Tighter padding on mobile */}
+      <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 bg-gray-900 shrink-0 border-t border-gray-800 sm:border-none pb-safe">
+        <div className="space-y-2 sm:space-y-3 select-none touch-none">
+          <div className="flex justify-between text-[10px] sm:text-xs text-gray-400 font-mono tracking-wider">
             <span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span>
           </div>
-          <div className="relative h-8 flex items-center cursor-pointer group" onMouseDown={handleSeek} ref={progressContainerRef}>
-            <div className="absolute w-full h-3 bg-gray-800 rounded-full pointer-events-none overflow-hidden">
+          <div className="relative h-8 sm:h-8 flex items-center cursor-pointer group" onMouseDown={handleSeek} onTouchStart={handleSeek} ref={progressContainerRef}>
+            <div className="absolute w-full h-2.5 sm:h-3 bg-gray-800 rounded-full pointer-events-none overflow-hidden">
                <div className="absolute top-0 left-0 h-full bg-blue-600/50 transition-all duration-75" style={{ width: `${(currentTime / duration) * 100 || 0}%` }} />
             </div>
             {loopStart !== null && loopEnd !== null && (
-              <div className="absolute h-3 bg-green-500/30 border-y border-green-500/50 pointer-events-none" style={{ left: `${(loopStart / duration) * 100}%`, width: `${((loopEnd - loopStart) / duration) * 100}%` }} />
+              <div className="absolute h-2.5 sm:h-3 bg-green-500/30 border-y border-green-500/50 pointer-events-none" style={{ left: `${(loopStart / duration) * 100}%`, width: `${((loopEnd - loopStart) / duration) * 100}%` }} />
             )}
+            
+            {/* Added TouchStart handlers to Draggable Markers */}
             {loopStart !== null && (
-              <div className={`absolute w-5 h-6 bg-green-500 rounded-sm shadow-md cursor-ew-resize flex items-center justify-center z-20 hover:scale-110 hover:bg-green-400 transition-transform ${draggingMarker === 'start' ? 'scale-110 ring-2 ring-white' : ''}`} style={{ left: `calc(${(loopStart / duration) * 100}% - 10px)` }} onMouseDown={(e) => { e.stopPropagation(); setDraggingMarker('start'); }}>
-                 <div className="w-0.5 h-3 bg-green-900 rounded-full" />
+              <div className={`absolute w-6 h-8 sm:w-5 sm:h-6 bg-green-500 rounded-sm shadow-md cursor-ew-resize flex items-center justify-center z-20 hover:scale-110 active:scale-110 active:bg-green-400 transition-transform ${draggingMarker === 'start' ? 'scale-110 ring-2 ring-white' : ''}`} style={{ left: `calc(${(loopStart / duration) * 100}% - 12px)` }} onMouseDown={(e) => { e.stopPropagation(); setDraggingMarker('start'); }} onTouchStart={(e) => { e.stopPropagation(); setDraggingMarker('start'); }}>
+                 <div className="w-0.5 h-3 sm:h-3 bg-green-900 rounded-full" />
               </div>
             )}
             {loopEnd !== null && (
-              <div className={`absolute w-5 h-6 bg-red-500 rounded-sm shadow-md cursor-ew-resize flex items-center justify-center z-20 hover:scale-110 hover:bg-red-400 transition-transform ${draggingMarker === 'end' ? 'scale-110 ring-2 ring-white' : ''}`} style={{ left: `calc(${(loopEnd / duration) * 100}% - 10px)` }} onMouseDown={(e) => { e.stopPropagation(); setDraggingMarker('end'); }}>
-                <div className="w-0.5 h-3 bg-red-900 rounded-full" />
+              <div className={`absolute w-6 h-8 sm:w-5 sm:h-6 bg-red-500 rounded-sm shadow-md cursor-ew-resize flex items-center justify-center z-20 hover:scale-110 active:scale-110 active:bg-red-400 transition-transform ${draggingMarker === 'end' ? 'scale-110 ring-2 ring-white' : ''}`} style={{ left: `calc(${(loopEnd / duration) * 100}% - 12px)` }} onMouseDown={(e) => { e.stopPropagation(); setDraggingMarker('end'); }} onTouchStart={(e) => { e.stopPropagation(); setDraggingMarker('end'); }}>
+                <div className="w-0.5 h-3 sm:h-3 bg-red-900 rounded-full" />
               </div>
             )}
-            <div className="absolute w-1 h-5 bg-white rounded-full pointer-events-none shadow-sm shadow-black z-10 transition-all duration-75" style={{ left: `calc(${(currentTime / duration) * 100 || 0}% - 2px)` }} />
+            <div className="absolute w-1 h-4 sm:h-5 bg-white rounded-full pointer-events-none shadow-sm shadow-black z-10 transition-all duration-75" style={{ left: `calc(${(currentTime / duration) * 100 || 0}% - 2px)` }} />
           </div>
         </div>
 
-        <div className="flex flex-col xl:flex-row gap-4 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={togglePlay} className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-colors"><Pause className={`w-5 h-5 fill-white ${isPlaying ? '' : 'hidden'}`} /><Play className={`w-5 h-5 fill-white ${!isPlaying ? '' : 'hidden'}`} /></button>
-            <button onClick={() => { if(videoRef.current) videoRef.current.currentTime = loopStart !== null ? loopStart : 0; }} className="p-3 hover:bg-gray-800 rounded-full text-gray-300"><RotateCcw className="w-5 h-5" /></button>
-            <div className="flex items-center gap-2 ml-2 bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700">
-              <Settings2 className="w-4 h-4 text-gray-400" />
-              <select value={playbackRate} onChange={changeSpeed} className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer">
-                <option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1">1.0x</option><option value="1.5">1.5x</option><option value="2">2.0x</option>
-              </select>
+        <div className="flex flex-col gap-4">
+          {/* Top row of controls (Play/Speed & Loop) */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button onClick={togglePlay} className="p-2 sm:p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-colors"><Pause className={`w-4 h-4 sm:w-5 sm:h-5 fill-white ${isPlaying ? '' : 'hidden'}`} /><Play className={`w-4 h-4 sm:w-5 sm:h-5 fill-white ${!isPlaying ? '' : 'hidden'}`} /></button>
+              <button onClick={() => { if(videoRef.current) videoRef.current.currentTime = loopStart !== null ? loopStart : 0; }} className="p-2 sm:p-3 hover:bg-gray-800 rounded-full text-gray-300"><RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+              <div className="flex items-center gap-1.5 sm:gap-2 sm:ml-2 bg-gray-800 px-2 sm:px-3 py-1.5 rounded-lg border border-gray-700">
+                <Settings2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                <select value={playbackRate} onChange={changeSpeed} className="bg-transparent text-xs sm:text-sm font-medium focus:outline-none cursor-pointer">
+                  <option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1">1.0x</option><option value="1.5">1.5x</option><option value="2">2.0x</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-800/50 p-1 sm:p-1.5 rounded-xl border border-gray-700/50 flex-wrap justify-center w-full sm:w-auto">
+              {loopStart === null ? (
+                 <button onClick={() => {if(duration){setLoopStart(currentTime); setLoopEnd(Math.min(currentTime+5, duration));}}} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium hover:bg-gray-700 text-gray-300 rounded-lg"><MapPin className="w-3 h-3 sm:w-4 sm:h-4" /> Create Loop</button>
+              ) : (
+                 <>
+                   <div className="px-2 sm:px-3 text-xs sm:text-sm text-green-400 font-medium font-mono bg-green-500/10 py-1.5 rounded-lg border border-green-500/20">Start: {formatTime(loopStart)}</div>
+                   <div className="px-2 sm:px-3 text-xs sm:text-sm text-red-400 font-medium font-mono bg-red-500/10 py-1.5 rounded-lg border border-red-500/20">End: {formatTime(loopEnd)}</div>
+                   <button onClick={() => {setLoopStart(null); setLoopEnd(null);}} className="p-1.5 sm:p-2 hover:bg-red-500/20 hover:text-red-400 rounded-lg text-gray-400"><X className="w-4 h-4" /></button>
+                 </>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-800/50 p-1.5 rounded-xl border border-gray-700/50 flex-wrap justify-center">
-            {loopStart === null ? (
-               <button onClick={() => {if(duration){setLoopStart(currentTime); setLoopEnd(Math.min(currentTime+5, duration));}}} className="flex items-center gap-2 px-4 py-2 text-sm font-medium hover:bg-gray-700 text-gray-300 rounded-lg"><MapPin className="w-4 h-4" /> Create Loop</button>
-            ) : (
-               <>
-                 <div className="px-3 text-sm text-green-400 font-medium font-mono bg-green-500/10 py-1.5 rounded-lg border border-green-500/20">Start: {formatTime(loopStart)}</div>
-                 <div className="px-3 text-sm text-red-400 font-medium font-mono bg-red-500/10 py-1.5 rounded-lg border border-red-500/20">End: {formatTime(loopEnd)}</div>
-                 <button onClick={() => {setLoopStart(null); setLoopEnd(null);}} className="p-2 hover:bg-red-500/20 hover:text-red-400 rounded-lg text-gray-400"><X className="w-4 h-4" /></button>
-               </>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 justify-center">
-            {/* AI & Vision Toggles */}
-            <div className="flex gap-1.5 border-r border-gray-800 pr-3">
-               <button onClick={togglePoseDetection} disabled={isPoseModelLoading} className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors w-[72px] h-14 ${isPoseEnabled ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
-                 {isPoseModelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4 mb-1" />}
-                 <span className="text-[9px] font-bold uppercase tracking-wider">{isPoseEnabled ? 'Pose On' : 'Pose'}</span>
+          {/* Bottom row of controls (AI & Actions) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 sm:pt-0 border-t border-gray-800 sm:border-none">
+            <div className="flex gap-1.5">
+               <button onClick={togglePoseDetection} disabled={isPoseModelLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${isPoseEnabled ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                 {isPoseModelLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">{isPoseEnabled ? 'Pose On' : 'Pose'}</span>
                </button>
 
-               <button onClick={toggleBallDetection} disabled={isBallModelLoading} className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors w-[72px] h-14 ${isBallEnabled ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
-                 {isBallModelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Target className="w-4 h-4 mb-1" />}
-                 <span className="text-[9px] font-bold uppercase tracking-wider">{isBallEnabled ? 'Ball On' : 'Ball (Beta)'}</span>
+               <button onClick={toggleBallDetection} disabled={isBallModelLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 ${isBallEnabled ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-transparent'}`}>
+                 {isBallModelLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">{isBallEnabled ? 'Ball On' : 'Ball (Beta)'}</span>
                </button>
 
-               <button onClick={getAiCoachTips} disabled={isAiLoading} className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors w-[72px] h-14 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20`}>
-                 {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4 mb-1" />}
-                 <span className="text-[9px] font-bold uppercase tracking-wider">AI Coach</span>
+               <button onClick={getAiCoachTips} disabled={isAiLoading} className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors w-[60px] sm:w-[72px] h-12 sm:h-14 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20`}>
+                 {isAiLoading ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 sm:mb-1" />}
+                 <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-center leading-tight">AI Coach</span>
                </button>
             </div>
 
-            {/* Primary Actions */}
-            <div className="flex items-center gap-1.5">
-               <button onClick={openEditModal} className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white rounded-lg transition-colors border border-gray-700">
-                 <Edit3 className="w-4 h-4" />
+            <div className="flex items-center gap-1 sm:gap-1.5">
+               <button onClick={openEditModal} className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white rounded-lg transition-colors border border-gray-700">
+                 <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                  <span className="hidden sm:inline">Edit Details</span>
                </button>
-               <button onClick={shareClip} disabled={isSharing} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors" title="Share"><Share2 className="w-5 h-5" /></button>
-               <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete"><Trash2 className="w-5 h-5" /></button>
+               <button onClick={shareClip} disabled={isSharing} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"><Share2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+               <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
             </div>
           </div>
         </div>
       </div>
 
       {aiCoachTips && (
-        <div className="absolute top-20 right-6 w-80 max-h-[80%] overflow-y-auto bg-gray-900/95 border border-purple-500/30 shadow-2xl rounded-2xl p-5 z-40 backdrop-blur-md">
+        <div className="absolute top-16 sm:top-20 right-4 left-4 sm:left-auto sm:right-6 sm:w-80 max-h-[70%] sm:max-h-[80%] overflow-y-auto bg-gray-900/95 border border-purple-500/30 shadow-2xl rounded-2xl p-4 sm:p-5 z-40 backdrop-blur-md">
           <div className="flex justify-between items-start mb-3">
-            <h3 className="text-purple-400 font-bold flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Coach Notes</h3>
+            <h3 className="text-purple-400 font-bold flex items-center gap-2 text-sm sm:text-base"><Sparkles className="w-4 h-4" /> AI Coach Notes</h3>
             <button onClick={() => setAiCoachTips(null)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
           </div>
-          <div className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{aiCoachTips}</div>
+          <div className="text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{aiCoachTips}</div>
         </div>
       )}
 
@@ -1045,26 +1024,26 @@ function PlaybackView({ clip, onBack, onDelete, onUpdate }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
             <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Tag className="w-5 h-5 text-blue-500" /> Edit Details</h3>
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2"><Tag className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" /> Edit Details</h3>
               <button onClick={() => setShowEditModal(false)} className="text-gray-400"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-6 flex flex-col gap-6">
+            <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-400 flex items-center gap-2"><User className="w-4 h-4" /> Player Name</label>
-                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2.5 text-white" />
+                <label className="text-xs sm:text-sm font-medium text-gray-400 flex items-center gap-2"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Player Name</label>
+                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-white" />
               </div>
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-400 flex items-center gap-2"><Tag className="w-4 h-4" /> Drill Tags</label>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-2 sm:space-y-3">
+                <label className="text-xs sm:text-sm font-medium text-gray-400 flex items-center gap-2"><Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Drill Tags</label>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {AVAILABLE_TAGS.map(tag => (
-                    <button key={tag} onClick={() => toggleTag(tag)} className={`px-3 py-1.5 rounded-lg text-sm border ${editTags.includes(tag) ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-800 text-gray-300 border-gray-700'}`}>{tag}</button>
+                    <button key={tag} onClick={() => toggleTag(tag)} className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm border ${editTags.includes(tag) ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-800 text-gray-300 border-gray-700'}`}>{tag}</button>
                   ))}
                 </div>
               </div>
             </div>
-            <div className="p-4 border-t border-gray-800 bg-gray-800/50 flex justify-end gap-3">
-              <button onClick={() => setShowEditModal(false)} className="px-5 py-2 text-sm text-gray-300">Cancel</button>
-              <button onClick={saveEdits} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl">Save Details</button>
+            <div className="p-3 sm:p-4 border-t border-gray-800 bg-gray-800/50 flex justify-end gap-2 sm:gap-3">
+              <button onClick={() => setShowEditModal(false)} className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-300">Cancel</button>
+              <button onClick={saveEdits} className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-xl">Save Details</button>
             </div>
           </div>
         </div>
