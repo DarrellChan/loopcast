@@ -429,38 +429,63 @@ function CameraView({ onRecordingComplete, onCancel }) {
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
+  
   const [isRecording, setIsRecording] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [error, setError] = useState(null);
+  
+  const [cameras, setCameras] = useState([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
   const chunksRef = useRef([]);
 
-  const startCamera = async () => {
+  const startCamera = async (deviceId = null) => {
+    // Stop any existing stream before requesting a new one
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+
     try {
+      const videoConstraints = deviceId 
+        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } };
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }, 
+        video: videoConstraints, 
         audio: true 
       });
+      
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
       setHasPermission(true);
       setError(null);
+
+      // Once permission is granted, we can read the device labels
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(d => d.kind === 'videoinput');
+      setCameras(videoInputs);
+
+      // Update selected camera state to match reality
+      if (deviceId) {
+        setSelectedCameraId(deviceId);
+      } else if (videoInputs.length > 0) {
+        const activeTrack = stream.getVideoTracks()[0];
+        const activeDevice = videoInputs.find(d => d.label === activeTrack.label);
+        setSelectedCameraId(activeDevice ? activeDevice.deviceId : videoInputs[0].deviceId);
+      }
+
     } catch (err) {
       console.error("Error accessing camera:", err);
       setError("Could not access camera. Please check permissions.");
     }
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-  };
-
   useEffect(() => {
     startCamera();
-    return () => stopCamera();
+    return () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
+    };
   }, []);
 
   const handleStartRecording = () => {
@@ -470,7 +495,7 @@ function CameraView({ onRecordingComplete, onCancel }) {
     mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      stopCamera();
+      if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
       onRecordingComplete(blob); 
     };
     mediaRecorderRef.current = mediaRecorder;
@@ -487,20 +512,40 @@ function CameraView({ onRecordingComplete, onCancel }) {
 
   return (
     <div className="flex flex-col relative w-full h-[100dvh] sm:h-full sm:min-h-[600px] bg-black overflow-hidden">
-      <div className="absolute top-0 inset-x-0 p-4 flex justify-between z-10 bg-gradient-to-b from-black/60 to-transparent">
+      <div className="absolute top-0 inset-x-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
         <button 
-          onClick={() => { stopCamera(); onCancel(); }}
+          onClick={() => { 
+            if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop()); 
+            onCancel(); 
+          }}
           className="flex items-center gap-2 text-white/80 hover:text-white bg-black/40 hover:bg-black/60 px-3 py-2 rounded-lg backdrop-blur-sm transition-all text-sm sm:text-base"
         >
           <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           Cancel
         </button>
+
+        {cameras.length > 1 && !isRecording && (
+          <div className="flex items-center gap-2 bg-black/50 px-2 py-1.5 rounded-lg border border-gray-600 backdrop-blur-sm">
+            <Camera className="w-4 h-4 text-gray-300 ml-1 shrink-0" />
+            <select
+              value={selectedCameraId}
+              onChange={(e) => startCamera(e.target.value)}
+              className="bg-transparent text-white text-xs sm:text-sm py-1 pr-4 focus:outline-none max-w-[120px] sm:max-w-[200px] truncate cursor-pointer appearance-none"
+            >
+              {cameras.map((cam, i) => (
+                <option key={cam.deviceId} value={cam.deviceId} className="bg-gray-900 text-white">
+                  {cam.label || `Camera ${i + 1}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {error ? (
         <div className="absolute inset-0 flex items-center justify-center text-red-400 p-6 text-center bg-gray-900 z-10">
           <p>{error}</p>
-          <button onClick={startCamera} className="ml-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 text-white">Retry</button>
+          <button onClick={() => startCamera()} className="ml-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 text-white">Retry</button>
         </div>
       ) : (
         <video ref={videoRef} autoPlay muted playsInline className="absolute top-0 left-0 w-full h-full object-cover z-0" />
